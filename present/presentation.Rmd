@@ -1,0 +1,21 @@
+---
+title: "Semi-Supervised Learning with Deep Generative Models"
+subtitle: "Kingma et. al. (2014)"
+author: Tyler Brown
+output: beamer_presentation
+bibliography: references.bib
+---
+
+How can we model data of increasing size when obtaining label 
+information is difficult?
+
+# Start with something we know
+
+What is a common experience for the audience? What seems 
+intuitive?
+
+DLB Learning Representations
+
+# Next step
+
+# References
