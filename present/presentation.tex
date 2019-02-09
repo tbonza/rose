@@ -75,6 +75,26 @@
   \footnotetext[1]{Kingma et. al. (2014) equation (1)}
   \footnotetext[2]{Kingma et. al. (2014) equation (2)}
   
+\end{frame}
+
+\begin{frame}
+  \frametitle{(M1) Latent-feature discriminative model}
+
+  \[
+  y \Leftarrow   \frac{p(z)p(x|z)}{p(x)}
+  \]
+
+  where
+
+  \begin{align*}
+    p(z) &= \mathcal{N}(z|0,I) \qquad \text{part 1}\\
+    p(x|z) &= f(x;z,\theta) \qquad \text{part 2} \\
+    p(x) &= \tilde{p_u}(x) \qquad \text{unlabelled subset of $x_i \in \mathbb{R}^D$}
+    \end{align*}
+
+  
+
+  Kingma et. al. (2014) eq. (1)
   \end{frame}
  
 \end{document}
