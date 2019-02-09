@@ -1,0 +1,80 @@
+\documentclass{beamer}
+ 
+\usepackage[utf8]{inputenc}
+ 
+ 
+%Information to be included in the title page:
+\title{Semi-supervised Learning with Deep Generative Models}
+\subtitle{Kingma et. al. (2014)}
+\author{Tyler Brown}
+\institute{CS 7180}
+\date{}
+ 
+\begin{document}
+ 
+\frame{\titlepage}
+ 
+\begin{frame}
+  \frametitle{Motivating Question}
+  How can we model data of increasing size when obtaining label 
+  information is difficult?
+\end{frame}
+
+\begin{frame}
+  \frametitle{High-level Answer}
+
+  We can estimate missing label information by
+  using a probabilistic model.
+  
+\end{frame}
+
+\begin{frame}
+  \frametitle{Specifying the Probabilistic Model for Missing Labels}
+
+    \begin{itemize}
+  \item Data appears as pairs $(\mathbf{X}, \mathbf{Y}) =
+    \{(\mathbf{x}_1, y_1), ..., (\mathbf{x}_N, y_N)\}$
+  with the $i$-th observation $x_i \in \mathbb{R}^D$ and a
+  corresponding class label $y_i \in \{1, ..., L\}$
+
+  \begin{itemize}
+\item Each pair of observations $(x_i,y_i)$ has a corresponding
+  latent variable $z_i$
+
+\item Empirical distribution over the labelled and unabelled subsets
+  is referred to as $\tilde{p_l}(\mathbf{x}, y)$ and
+  $\tilde{p_u}(\mathbf{x})$
+  \end{itemize}
+\item We can estimate $y_i$ for $x_i$ in distribution
+  $\tilde{p_u}(\mathbf{x})$ by finding the maximum
+  probability of $p(y_i)$ by using a set of features
+  related to $z_i$ and a predictive model
+  \begin{enumerate}
+  \item \textbf{Latent-feature discriminative model (M1)}
+  \item \textbf{Generative semi-supervised model (M2)}
+  \item \textbf{Stacked generative semi-supervised model (M1+M2)}
+  \end{enumerate}
+  \end{itemize}
+  \end{frame}
+
+\begin{frame}
+  \frametitle{Bayes Rule is used when specifying M1 \& M2}
+
+  \begin{align*}
+    p(x,y) &= p(x)p(y|x) \\
+    &= p(y)p(x|y) \\
+    p(x|y) &= \frac{p(x)p(y|x)}{p(y)}
+  \end{align*}
+
+  We need to find an inferred posterior distribution $p_\theta (.)$ \newline
+  for M1 \footnotemark
+  \[p_\theta (\mathbf{x}|\mathbf{z})\] and
+  M2 \footnotemark \[p_\theta (\mathbf{x}|y, \mathbf{z})\]
+
+
+  \footnotetext[1]{Kingma et. al. (2014) equation (1)}
+  \footnotetext[2]{Kingma et. al. (2014) equation (2)}
+  
+  \end{frame}
+ 
+\end{document}
