@@ -1,8 +1,7 @@
 \documentclass{beamer}
  
 \usepackage[utf8]{inputenc}
- 
- 
+\usepackage{amsmath}
 %Information to be included in the title page:
 \title{Semi-supervised Learning with Deep Generative Models}
 \subtitle{Kingma et. al. (2014)}
@@ -60,6 +59,8 @@
 \begin{frame}
   \frametitle{Bayes Rule is used when specifying M1 \& M2}
 
+  \textbf{TODO:} this slide doesn't transition well....
+
   \begin{align*}
     p(x,y) &= p(x)p(y|x) \\
     &= p(y)p(x|y) \\
@@ -81,20 +82,56 @@
   \frametitle{(M1) Latent-feature discriminative model}
 
   \[
-  y \Leftarrow   \frac{p(z)p(x|z)}{p(x)}
+  y \Leftarrow   p(z|x) = \frac{p(z)p(x|z)}{p(x)}
   \]
 
   where
 
   \begin{align*}
-    p(z) &= \mathcal{N}(z|0,I) \qquad \text{part 1}\\
-    p(x|z) &= f(x;z,\theta) \qquad \text{part 2} \\
+    p(z) &= \mathcal{N}(z|0,I) \qquad \text{Gaussian distribution of $z$ given a missing label $y$}\\
+    p(x|z) &= f(x;z,\theta) \qquad \text{likelihood function, parameters
+      $\theta$ of a set of $z$} \\
     p(x) &= \tilde{p_u}(x) \qquad \text{unlabelled subset of $x_i \in \mathbb{R}^D$}
     \end{align*}
 
-  
-
   Kingma et. al. (2014) eq. (1)
+\end{frame}
+
+\begin{frame}
+  \frametitle{(M1) Predicting Class Labels $y$}
+
+  Approximate samples from the posterior distribution over the
+  latent variables $p(z|x)$ are used as features to train a
+  classifier that predicts class labels $y$
+
+  \begin{itemize}
+  \item (transductive) SVM
+  \item multinomial regression
+  \end{itemize}
+
+  \textbf{TODO:} Add pictures or simulation here
+  
+\end{frame}
+
+\begin{frame}
+  \frametitle{(M2) Generative semi-supervised model}
+
+  \[
+  p(y|\mathbf{x}) = \frac{p(\mathbf{x}|y) p(y)}{p(\mathbf{x})} \approx
+  \frac{p_\theta (\mathbf{x}|y, \mathbf{z}) p(y)}{p(\mathbf{x})}
+  \]
+
+  where
+
+  \begin{align*}
+    p(y) &= Cat(y|\mathbf{\pi}) \qquad \text{multinomial distribution, $y$ can be latent} \\
+    p(\mathbf{z}) &= \mathcal{N}(\mathbf{z|0,I}) \qquad
+    \text{Gaussian distribution of $z$ when missing $y$} \\
+    p_\theta (\mathbf{x}|y,z) &= f(\mathbf{x};y,\mathbf{z},\mathbf{\theta})
+    \qquad \text{likelihood function, nonlinear parameters} \\
+    p(x) & \qquad \qquad \qquad \qquad \text{all $x$ in dist. of real numbers;  $x \in \mathbb{R}^{D}$}
+    \end{align*}
+  
   \end{frame}
  
 \end{document}
