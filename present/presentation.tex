@@ -139,6 +139,45 @@
     \end{enumerate}
 
   \textbf{TODO:} Add a picture or something here
+\end{frame}
+
+\begin{frame}
+  \frametitle{Scaling Up: Lower Bound Objective}
+
+  Lower Bound Objective\footnotemark: computation of the exact posterior
+  distribution is intractable for models M1 and M2
+  
+  \begin{align*}
+    \text{M1: } &q_\phi (z|x) = \mathcal{N}(z|u_\phi (x),
+    \text{diag}(\mathbf{\sigma}_\phi^2 (\mathbf{x}))) \tag{3}\\
+    \text{M2: } &q_\phi(\mathbf{z}|y,\mathbf{x}) =
+    \mathcal{N}(\mathbf{z}|\mathbf{\mu}_\phi (y, \mathbf{x}),
+    \text{diag}(\mathbf{\sigma}_\phi^2(\mathbf{x}))); \\
+    &q_\phi (y|\mathbf{z}) = \text{Cat}(y|\mathbf{\pi}_\phi (x)), \tag{4}
+  \end{align*}
+
+  where
+
+  \begin{align*}
+    \sigma_\phi (x) &\qquad \text{vector of standard deviations} \\
+    \pi_\phi(x) &\qquad \text{probability vector} \\
+    \mu_\phi(x), \sigma_\phi(x), \pi_\sigma (x)  &\qquad
+    \text{Maximum likelihood Priors (MLPs)} \\
+    \end{align*}
+
+  \footnotetext{Kingma et. al. (2014) equations (3), (4)}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Scaling Up: M1 Model Objective}
+
+  \[
+  \log p_\theta (x) \ge \mathbb{E}
+  \]
+\end{frame}
+
+\begin{frame}
+  \frametitle{Scaling Up: M2 Model Objective}
   \end{frame}
  
 \end{document}
