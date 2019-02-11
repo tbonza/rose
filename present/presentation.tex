@@ -2,6 +2,12 @@
  
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath}
+\usepackage{clrscode3e}
+\usepackage{graphicx}
+
+\graphicspath{{imgs/}}
+
+
 %Information to be included in the title page:
 \title{Semi-supervised Learning with Deep Generative Models}
 \subtitle{Kingma et. al. (2014)}
@@ -26,6 +32,12 @@
   using a probabilistic model.
   
 \end{frame}
+
+\begin{frame}
+  \frametitle{Previous Work}
+
+  TODO: Who did they cite?
+  \end{frame}
 
 \begin{frame}
   \frametitle{Specifying the Probabilistic Model for Missing Labels}
@@ -172,12 +184,77 @@
   \frametitle{Scaling Up: M1 Model Objective}
 
   \[
-  \log p_\theta (x) \ge \mathbb{E}
+  \log p_\theta (x) \ge \mathbb{E}_{q_\phi (z|x)}
+       [\log p_\theta (x|z)] - KL[q_\phi (z|x)||p_\theta (z)]
+       = - \mathcal{J}(x)
   \]
+
+  Equation 5
 \end{frame}
 
 \begin{frame}
   \frametitle{Scaling Up: M2 Model Objective}
+
+  When $y_i$ is observed for the $(x_i,y_i)$ data pair, extend from M1
+  \begin{align*}
+    &\log p_\theta (x) \ge \mathbb{E}_{q_\phi (z|x,y)}
+       [\log p_\theta (x|y,z) + \log p_\theta (y) + \log p(z) -
+         q_\theta (z|x,y)] \\
+       &= - \mathcal{L}(x,y)
+  \end{align*}
+
+  In the case where $y_i$ is missing,
+  \begin{align*}
+    \log p_\theta (x) &\ge \mathbb{E}_{q_\phi (y,z|x)}
+         [\log p_\theta (x|y,z) + \log p_\theta (y) \\
+           &\qquad\qquad\qquad + \log p(z) - \log q_\phi (y,z|x)] \\
+         &= \sum_y q_\phi (y|x) ( - \mathcal{L}(x,y))
+         + \mathcal{H}(q_\phi (y|x)) \\
+         &= - \mathcal{U}(x)
+  \end{align*}
+
+  The bound on the marginal likelihood for the entire dataset is
+  now\footnotemark
+  \[
+  \mathcal{J} = \sum_{(x,y) \sim \tilde{p}_l} \mathcal{L}(x,y)
+    + \sum_{x \sim \tilde{p}_u} \mathcal{U}(x)
+    \]
+
+    \footnotetext{See Kingma et. al. (2014) equations 6-9}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Optimization Techniques}
+
+  Not using the EM algorithm, that's interesting
+
+  TODO: using Adam or what?
+\end{frame}
+
+\begin{frame}
+  \frametitle{Optimization Algorithms}
+  \includegraphics[scale=0.5]{learningModel}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Results: Benchmark Classification}
+
+  MNIST results
+\end{frame}
+\begin{frame}
+  \frametitle{Results: Image Classification}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Discussion}
+
+  You can use this model for a few things
+\end{frame}
+
+\begin{frame}
+  \textbf{Any questions? Thanks!}
   \end{frame}
+
+
  
 \end{document}
