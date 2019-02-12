@@ -34,16 +34,38 @@
 \end{frame}
 
 \begin{frame}
-  \frametitle{Previous Work}
+  \frametitle{Most Relevant Previous Work}
 
-  TODO: Who did they cite?
+  Pitelis, N., Russell, C., and Agapito, L. (2014). Semi-supervised
+  learning using an unsupervised atlas. \textit{In Proceddings of the
+    European Conference on Machine Learning (ECML)}, volume LNCS 8725,
+  pages 565 – 580.
 
-  Talk about previous work
+  \begin{itemize}
+  \item Observing that high-dimensional datasets often lie on or near
+    \textit{manifolds} of locally low rank can help avoid the
+    \textit{curse of dimensionality}
+  \item Experiments show how using unlabelled data to learn the underlying
+    manifold improves classifier accuracy when trained on limited labelled
+    data
+    \begin{enumerate}
+    \item \textbf{Unsupervised learning of the underlying manifold:}
+      Approximate the manifold of data on the original space by fitting
+      an atlas of low-dimensional overlapping affine charts.
+    \item \textbf{Supervised training of an SVM:} Proposed a new family of
+      Mercer Kernels for SVM-based supervised learning which uses
+      soft-assignment of datapoints to the underlying low-dimensional affine
+      charts to generate the kernels
+      \end{enumerate}
+    \end{itemize}
+
   \end{frame}
 
 \begin{frame}
   \frametitle{Specifying the Probabilistic Model for Missing Labels}
 
+  Kingma et. al. (2014)
+  
     \begin{itemize}
   \item Data appears as pairs $(\mathbf{X}, \mathbf{Y}) =
     \{(\mathbf{x}_1, y_1), ..., (\mathbf{x}_N, y_N)\}$
