@@ -37,6 +37,8 @@
   \frametitle{Previous Work}
 
   TODO: Who did they cite?
+
+  Talk about previous work
   \end{frame}
 
 \begin{frame}
@@ -226,9 +228,23 @@
 \begin{frame}
   \frametitle{Optimization Techniques}
 
-  Not using the EM algorithm, that's interesting
+  \begin{itemize}
+  \item Not using the EM algorithm, that's interesting, why
+    \begin{itemize}
+      \item perform efficient joint inference that's easy to scale (pg. 7)
+      \end{itemize}
+  \item Using AdaGrad
+    \end{itemize}
+  
 
-  TODO: using Adam or what?
+  \[
+  \nabla_{\{\theta, \phi\}} \mathbb{E}_{q_\phi (z|x)}
+        [\log p_\theta (x|z)] = \mathbb{E}_{\mathcal{N}(\epsilon | 0, I)}
+        [\nabla_{\{\theta, \phi\}} \log p_\theta (x |\mu_\theta (x)
+          + \sigma_\phi (x) \odot \epsilon)]. 
+        \]
+
+        Kingma et. al. (2014) equation 11
 \end{frame}
 
 \begin{frame}
@@ -239,16 +255,21 @@
 \begin{frame}
   \frametitle{Results: Benchmark Classification}
 
-  MNIST results
+  \includegraphics[scale=0.5]{table1}
+  
 \end{frame}
 \begin{frame}
   \frametitle{Results: Image Classification}
+
+  \includegraphics[scale=0.5]{table2and3}
 \end{frame}
 
 \begin{frame}
   \frametitle{Discussion}
 
   You can use this model for a few things
+
+  TODO: just summarize their discussion
 \end{frame}
 
 \begin{frame}
