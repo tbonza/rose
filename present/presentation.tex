@@ -235,13 +235,19 @@
 \begin{frame}
   \frametitle{Scaling Up: M1 Model Objective}
 
+  Variational bound $\mathcal{J}(x)$ on the marginal likelihood of
+  a single data point is\footnotemark
   \[
   \log p_\theta (x) \ge \mathbb{E}_{q_\phi (z|x)}
        [\log p_\theta (x|z)] - KL[q_\phi (z|x)||p_\theta (z)]
        = - \mathcal{J}(x)
-  \]
+   \]
 
-  Equation 5
+   Approximate posterior is used as a feature extractor for the
+   labelled data set, and the features used for training the
+   classifier
+
+  \footnotetext{Kingma et. al. (2014) Equation 5}
 \end{frame}
 
 \begin{frame}
