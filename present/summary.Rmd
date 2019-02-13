@@ -1,0 +1,38 @@
+---
+title: "Kingma et. al. (2014) Paper Summary"
+output: pdf_document
+---
+
+Link to the paper: https://arxiv.org/pdf/1406.5298.pdf
+
+# Overview
+
+Semi-supervised learning allows for effective generalization
+from small labelled datasets to large unlabelled ones. This paper 
+presents a generative model that can be used for semi-supervised 
+learning. It leverages improvements in variational methods to make
+approximate Bayesian inferences in an efficient and scalable way.
+Application areas include image search, genomics, natural language
+parsing, and speech analysis.
+
+# Strengths
+
+* Efficient approximate Bayesian inferences using bounds from
+  model objective functions and Monte Carlo approximation
+* Demonsrates an effective technique for Semi-Supervised learning
+  using a Deep Generative Model
+* Computation complexity of model is similar to alternative approaches
+  based on an auto-encoder or neural model
+
+# Weaknesses
+
+* Limitation of the model is linear scaling with the number of classes 
+  in the datasets
+* We discussed in class how Monte Carlo approximation can be relatively
+  slow to train because an estimate has to be generated for each parameter
+
+# Questions for discussion
+
+How might semi-supervised learning using a Deep Generative Model 
+contribute to your project? If applicable, are there alternative 
+approaches you have considered? If so, why?
