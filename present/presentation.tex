@@ -312,6 +312,10 @@
   \frametitle{Optimization Algorithms}
   \includegraphics[scale=0.5]{learningModel}
 
+  Gradients w.r.t. generative parameters $\theta$ and variational
+  parameters $\phi$ can be efficiently computed as expectations of
+  simple gradients\footnotemark
+
     \[
   \nabla_{\{\theta, \phi\}} \mathbb{E}_{q_\phi (z|x)}
         [\log p_\theta (x|z)] = \mathbb{E}_{\mathcal{N}(\epsilon | 0, I)}
@@ -319,8 +323,7 @@
           + \sigma_\phi (x) \odot \epsilon)]. 
         \]
 
-        Kingma et. al. (2014) equation 11
-
+  \footnotetext{Kingma et. al. (2014) equation 11, regarding M1}
 \end{frame}
 
 \begin{frame}
