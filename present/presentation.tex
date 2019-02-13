@@ -285,15 +285,34 @@
   \frametitle{Optimization Techniques}
 
   \begin{itemize}
-  \item Not using the EM algorithm, that's interesting, why
+  \item Bounds from M1 and M2 objective function equations provides
+    for optimization of both $\theta$ and $\phi$ parameters
     \begin{itemize}
-      \item perform efficient joint inference that's easy to scale (pg. 7)
-      \end{itemize}
-  \item Using AdaGrad
+    \item Optimization can be done \textit{jointly} without using the EM
+      Algorithm
     \end{itemize}
-  
+  \item Use deterministic reparameterizations of the expectations in
+    the objective function and \textit{Monte Carlo} approximation
+  \item Previous work refers to this as \textit{stochastic gradient
+    variational Bayes}\footnotemark and
+    \textit{stochastic backpropagation}\footnotemark
+  \end{itemize}
 
-  \[
+  \footnotetext[7]{Kingma, D. P. and Welling, M. (2014).
+    Auto-encoding variational Bayes. \textit{In Proceedings of the
+      International Conference on Learning Representations (ICLR)}.}
+  \footnotetext{Rezende, D. J., Mohamed, S., and Wierstra, D. (2014).
+    Stochastic backpropagation and approximate inference
+    in deep generative models. \textit{In Proceedings of the International
+      Conference on Machine Learning (ICML)}, volume 32 of JMLR W&CP.}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Optimization Algorithms}
+  \includegraphics[scale=0.5]{learningModel}
+
+    \[
   \nabla_{\{\theta, \phi\}} \mathbb{E}_{q_\phi (z|x)}
         [\log p_\theta (x|z)] = \mathbb{E}_{\mathcal{N}(\epsilon | 0, I)}
         [\nabla_{\{\theta, \phi\}} \log p_\theta (x |\mu_\theta (x)
@@ -301,11 +320,7 @@
         \]
 
         Kingma et. al. (2014) equation 11
-\end{frame}
 
-\begin{frame}
-  \frametitle{Optimization Algorithms}
-  \includegraphics[scale=0.5]{learningModel}
 \end{frame}
 
 \begin{frame}
