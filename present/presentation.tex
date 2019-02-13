@@ -4,6 +4,9 @@
 \usepackage{amsmath}
 \usepackage{clrscode3e}
 \usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{arrows}
+\usetikzlibrary{backgrounds}
 
 \graphicspath{{imgs/}}
 
@@ -175,9 +178,31 @@
   \item Learn a new latent representation $z_1$ from M1
   \item Use embeddings from $z_1$ instead of raw data $x$, to create
     a generative semi-supervised model M2
-    \end{enumerate}
+  \end{enumerate}
 
-  \textbf{TODO:} Add a picture or something here
+  \begin{center}
+  \begin{tikzpicture}[scale=1, thick, framed,background rectangle]
+    \tikzset{vertex/.style = {shape=circle,draw,minimum size=1.5em}}
+    \tikzset{edge/.style = {->,> = latex'}}
+
+    % vertices
+    \node[vertex] (x) at (4,3) {x};
+    \node[vertex] (z1) at (4,1) {$z_1$};
+    \node[vertex] (z2) at (2,0) {$z_2$};
+    \node[vertex] (y) at (6,0) {y};
+    \node[text width=8cm] (t) at (4,-1) {
+      $p_\theta (x,y,z_1,z_2) = p(y)p(z_2)p_\theta
+      (z_1|y,z_2)p_\theta(x|z_1)$};
+
+    % edges
+    \draw[edge] (x) to (z1);
+    \draw[edge] (z1) to (z2);
+    \draw[edge] (z1) to (y);
+  \end{tikzpicture}
+  \end{center}
+
+  
+
 \end{frame}
 
 \begin{frame}
