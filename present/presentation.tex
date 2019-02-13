@@ -134,13 +134,16 @@
   latent variables $p(z|x)$ are used as features to train a
   classifier that predicts class labels $y$
 
-  \begin{itemize}
-  \item (transductive) SVM
-  \item multinomial regression
-  \end{itemize}
+  \begin{center}
+    \includegraphics[scale=0.5]{fig6_2}
+  \end{center}
 
-  \textbf{TODO:} Add pictures or simulation here
-  
+  (transductive) SVM\footnotemark finds the largest margin w.r.t.
+  the training \underline{\textbf{and}} the test vectors
+
+
+  \footnotetext{See Figure 6.2 from Chapelle, O., B. Schölkopf,
+    and A. Zien. "Semi-Supervised Learning." (2006).}
 \end{frame}
 
 \begin{frame}
