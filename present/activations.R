@@ -12,8 +12,8 @@ lines(softplus(-10:5))
 
 rng <- -10:5
 
-sm <- tibble(rng, softmax(rng), "SoftMax; exp(x)/sum(exp(x))")
-sp <- tibble(rng, softplus(rng), "SoftPlus; log(exp(x) + 1)")
+sm <- tibble(rng, softmax(rng), "SoftMax")
+sp <- tibble(rng, softplus(rng), "SoftPlus")
 cn <- c("Range", "Activation Value", "Activation Type")
 
 colnames(sm) = cn
