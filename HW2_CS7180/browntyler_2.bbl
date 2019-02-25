@@ -1,0 +1,17 @@
+\begin{thebibliography}{1}
+
+\bibitem{practica59:online}
+spro.
+\newblock practical-pytorch/char-rnn-generation.ipynb at master ·
+  spro/practical-pytorch.
+\newblock
+  \url{https://github.com/spro/practical-pytorch/blob/master/char-rnn-generation/char-rnn-generation.ipynb},
+  Jul 2017.
+\newblock (Accessed on 02/24/2019).
+
+\bibitem{lau2018deepspeare}
+Jey~Han Lau, Trevor Cohn, Timothy Baldwin, Julian Brooke, and Adam Hammond.
+\newblock Deep-speare: A joint neural model of poetic language, meter and
+  rhyme, 2018.
+
+\end{thebibliography}
