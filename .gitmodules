@@ -1,0 +1,3 @@
+[submodule "HW3_CS7180/Pytorch-Sketch-RNN"]
+	path = HW3_CS7180/Pytorch-Sketch-RNN
+	url = https://github.com/alexis-jacq/Pytorch-Sketch-RNN.git
