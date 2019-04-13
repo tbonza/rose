@@ -2,7 +2,7 @@
 data
 .ipynb_checkpoints
 .DS_Store
-
+__pycache__
 # Latex
 *.aux
 *.log
