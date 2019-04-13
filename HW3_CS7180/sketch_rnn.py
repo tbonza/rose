@@ -7,6 +7,7 @@ I've updated some minor parts for Pytorch API compatibility
 (`torch.__version__ == '1.0.1.post2'`) and the sheep dataset 
 we were given for HW3.
 """
+import logging
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,7 +18,10 @@ import torch.nn as nn
 from torch import optim
 import torch.nn.functional as F
 
+logger = logging.getLogger(__name__)
 use_cuda = torch.cuda.is_available()
+
+logger.info("Using cuda: {}".format(use_cuda))
 
 ###################################### hyperparameters
 class HParams():
@@ -275,8 +279,9 @@ class Model():
         self.decoder_optimizer.step()
         # some print and save:
         if epoch%1==0:
-            print('epoch',epoch,'loss',loss.data.item(),'LR',
-                  LR.data.item(),'LKL',LKL.data.item())
+            logger.info("epoch {}, loss {}, LR {}, LKL {}".\
+                        format(epoch, loss.data.item(),
+                               LR.data.item(), LKL.data.item()))
             self.encoder_optimizer = lr_decay(self.encoder_optimizer)
             self.decoder_optimizer = lr_decay(self.decoder_optimizer)
         if epoch%100==0:
@@ -422,9 +427,20 @@ def make_image(sequence, epoch, name='_output_'):
     plt.close("all")
 
 if __name__=="__main__":
+
+    logging.basicConfig(filename='train-sketch-rnn.log',
+                        format='%(asctime)s %(message)s',
+                        level=logging.INFO)
+    logger.info("STARTED training sketch-rnn")
     model = Model()
-    for epoch in range(50001):
+    for epoch in range(3500):
+        print(epoch)
         model.train(epoch)
+
+        if epoch % 10 == 0:
+            logger.info("Completed epoch: {}".format(epoch))
+
+    logger.info("FINISH training sketch-rnn")
 
 #    '''
 #    model.load('encoder.pth','decoder.pth')
