@@ -3,8 +3,9 @@
 This implementation of Sketch-RNN is from
 https://github.com/alexis-jacq/Pytorch-Sketch-RNN
 
-I've updated some minor parts for Pytorch API compatibility and
-the sheep dataset we were given.
+I've updated some minor parts for Pytorch API compatibility 
+(`torch.__version__ == '1.0.1.post2'`) and the sheep dataset 
+we were given for HW3.
 """
 
 import numpy as np
@@ -21,7 +22,7 @@ use_cuda = torch.cuda.is_available()
 ###################################### hyperparameters
 class HParams():
     def __init__(self):
-        self.data_location = 'cat.npz'
+        self.data_location = 'Sheep_Market/train.npy'
         self.enc_hidden_size = 256
         self.dec_hidden_size = 512
         self.Nz = 128
@@ -78,7 +79,8 @@ def normalize(strokes):
     return data
 
 dataset = np.load(hp.data_location, encoding='latin1')
-data = dataset['train']
+#data = dataset['train']
+data = dataset
 data = purify(data)
 data = normalize(data)
 Nmax = max_size(data)
@@ -415,7 +417,8 @@ def make_image(sequence, epoch, name='_output_'):
     pil_image = PIL.Image.frombytes('RGB', canvas.get_width_height(),
                  canvas.tostring_rgb())
     name = str(epoch)+name+'.jpg'
-    pil_image.save(name,"JPEG")
+    fpath = "outputs/" + name
+    pil_image.save(fpath,"JPEG")
     plt.close("all")
 
 if __name__=="__main__":
