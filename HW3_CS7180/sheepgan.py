@@ -552,6 +552,9 @@ class Generator(GeneratorHParams):
 
 ############################################################ Discriminator
 
+dhp = DiscriminatorHParams()
+
+
 class cLSTM(nn.Module):
 
     def __init__(self, input_size, hidden_size, num_layers=2):
@@ -579,16 +582,14 @@ class cLSTM(nn.Module):
         return last_h
 
 
-class Discriminator(nn.Module, DiscriminatorHParams):
-    """ Reference (3) """
-
-    def __init__(self):
+class ProbLSTM(nn.Module):
+    
+    def __init__(self, input_size, hidden_size, num_layers):
         """ Discriminator: cLSTM + output projection to probability """
         super().__init__()
-        self.cLSTM = cLSTM(self.input_size, self.hidden_size,
-                           self.num_layers)
+        self.cLSTM = cLSTM(input_size, hidden_size, num_layers)
         self.out = nn.Sequential(
-            nn.Linear(self.hidden_size, 1),
+            nn.Linear(hidden_size, 1),
             nn.Sigmoid()
         )
 
@@ -609,6 +610,28 @@ class Discriminator(nn.Module, DiscriminatorHParams):
         prob = self.out(h).squeeze()
 
         return h, prob
+    
+
+class Discriminator(DiscriminatorHParams):
+    """ Reference (3) """
+
+    def __init__(self):
+        if use_cuda:
+            self.clf = ProbLSTM(
+                self.input_size, self.hidden_size, self.num_layers
+            ).cuda()
+        else:
+            self.clf = ProbLSTM(
+                self.input_size, self.hidden_size, self.num_layers
+            )
+
+        self.clf_optimizer = optim.Adam(self.clf.parameters(), dhp.lr)
+        self.decoder_optimizer = optim.Adam(self.decoder.parameters(),dhp.lr)
+        self.eta_step = ghp.eta_min
+        self.sdp = SketchDataPipeline(dhp, dhp.train_set)
+
+    def train(self, epoch):
+        self.clf.train()
 
 
 
