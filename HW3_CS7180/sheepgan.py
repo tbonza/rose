@@ -142,18 +142,13 @@ class Generator(nn.Module, GeneratorHParams):
 
     def __init__(self):
         super(Generator, self).__init__()
-
-        self.encoder = nn.Embedding(self.input_size, self.gen_hidden_size)
         self.lstm = nn.LSTM(5, self.gen_hidden_size, bidirectional=True)
-        self.decoder = nn.Linear(self.gen_hidden_size, self.output_size)
 
     def forward(self, input, hidden):
         logger.info("input: {}, hidden: {}".\
                     format(len(input), len(hidden)))
 
-        input = self.encoder(input)
         output, hidden = self.lstm(input, hidden)
-        output = self.decoder(output.view(1, -1))
         return output, hidden
 
 class Discriminator(nn.Module, DiscriminatorHParams):
@@ -222,6 +217,9 @@ class SheepModelV0(object):
         # looks like batch is the target
 
         # Process batch
+
+        print(type(batch))
+        print(type(lengths[0]))
         
         gen_output, gen_hidden = self.generator(batch, lengths)
 
