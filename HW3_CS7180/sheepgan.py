@@ -58,9 +58,9 @@ class DiscriminatorHParams(SharedHParams):
 class SketchDataPipeline(object):
     """ Data pipeline is based on reference (1) """
 
-    def __init__(self, hparms, data_location):
+    def __init__(self, hparams, data_location):
         self.hp = hparams
-        self.data_location
+        self.data_location = data_location
 
     def max_size(self, data):
         """larger sequence length in the data set"""
@@ -130,9 +130,9 @@ class SketchDataPipeline(object):
     def get_clean_batch(self):
         """ Execute data pipeline on a data location """
         data = np.load(self.data_location, encoding='latin1')
-        data = self.purify(self.data)
-        data = self.normalize(self.data)
-        self.hp.Nmax = self.max_size(self.data)
+        data = self.purify(data)
+        data = self.normalize(data)
+        self.hp.Nmax = self.max_size(data)
 
         batch, lengths = self.make_batch(data, self.hp.batch_size,
                                          self.hp.Nmax)
@@ -141,16 +141,14 @@ class SketchDataPipeline(object):
 
 class Generator(nn.Module, GeneratorHParams):
 
-    def __init__(self, input_size, hidden_size, output_size, n_layers=1):
+    def __init__(self):
         super(Generator, self).__init__()
-        self.input_size = input_size
-        self.hidden_size = hidden_size
-        self.output_size = output_size
-        self.n_layers = n_layers
         
-        self.encoder = nn.Embedding(input_size, hidden_size)
-        self.lstm = nn.LSTM(hidden_size, hidden_size, n_layers)
-        self.decoder = nn.Linear(hidden_size, output_size)
+        self.encoder = nn.Embedding(self.input_size, self.hidden_size)
+        self.lstm = nn.LSTM(
+            self.hidden_size, self.hidden_size, self.n_layers
+        )
+        self.decoder = nn.Linear(self.hidden_size, self.output_size)
 
     def forward(self, input, hidden):
         input = self.encoder(input)
@@ -223,6 +221,7 @@ class SheepModelV0(object):
         self.shp = hp
 
         # Input and target
+        # looks like batch is the target
 
         # Process batch
         
@@ -234,7 +233,7 @@ class SheepModelV0(object):
 
         # Compute losses
 
-        loss = self.criterion(gen_output, input)
+        loss = self.criterion(gen_output, batch)
 
         # Gradient step
 
@@ -274,6 +273,14 @@ def train_model(num_epochs: int, model):
 
 if __name__ == "__main__":
 
-    model = SheepModelV0()
+    shared_hparams = SharedHParams() 
+    data_pipeline = SketchDataPipeline(
+        shared_hparams,
+        shared_hparams.train_set
+    )
+    criterion = nn.CrossEntropyLoss()
+    
+    
+    model = SheepModelV0(shared_hparams, data_pipeline, criterion)
     train_model(num_epochs=1, model=model)
     
