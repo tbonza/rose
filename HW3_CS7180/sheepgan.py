@@ -17,12 +17,14 @@ import logging
 import numpy as np
 
 import torch
+from torch import optim
 import torch.nn as nn
 
 from logging_utils import enable_cloud_log
 
 
 logger = logging.getLogger(__name__)
+use_cuda = torch.cuda.is_available()
 
 
 ############################################# hyperparameters
@@ -33,11 +35,14 @@ class SharedHParams(object):
         self.train_set = 'Sheep_Market/train.npy'
         self.test_set = 'Sheep_Market/test.npy'
         self.val_set = 'Sheep_Market/valid.npy'
+        self.learning_rate = 0.005
+        self.batch_size = 100
+        self.Nmax = 0
 
 class GeneratorHParams(SharedHParams):
     def __init__(self):
         self.input_size = 1
-        self.hidden_size = 1
+        self.hidden_size = 200
         self.output_size = 1
         self.n_layers = 1
         
@@ -96,13 +101,43 @@ class SketchDataPipeline(object):
             data.append(seq)
         return data
 
-    def get_clean_data(self):
-        """ Execute data pipeline on a data location """
-        self.data = np.load(self.data_location, encoding='latin1')
-        self.data = self.purify(self.data)
-        self.data = self.normalize(self.data)
+    def make_batch(self, data, batch_size, Nmax):
+        batch_idx = np.random.choice(len(data),batch_size)
+        batch_sequences = [data[idx] for idx in batch_idx]
+        strokes = []
+        lengths = []
+        indice = 0
+        for seq in batch_sequences:
+            len_seq = len(seq[:,0])
+            new_seq = np.zeros((Nmax,5))
+            new_seq[:len_seq,:2] = seq[:,:2]
+            new_seq[:len_seq-1,2] = 1-seq[:-1,2]
+            new_seq[:len_seq,3] = seq[:,2]
+            new_seq[(len_seq-1):,4] = 1
+            new_seq[len_seq-1,2:4] = 0
+            lengths.append(len(seq[:,0]))
+            strokes.append(new_seq)
+            indice += 1
 
-        return self.data
+        if use_cuda:
+            batch = torch.from_numpy(np.stack(strokes,1)).\
+                type(torch.FloatTensor).cuda()
+        else:
+            batch = torch.from_numpy(np.stack(strokes,1)).\
+                type(torch.FloatTensor)
+        return batch, lengths
+
+    def get_clean_batch(self):
+        """ Execute data pipeline on a data location """
+        data = np.load(self.data_location, encoding='latin1')
+        data = self.purify(self.data)
+        data = self.normalize(self.data)
+        self.hp.Nmax = self.max_size(self.data)
+
+        batch, lengths = self.make_batch(data, self.hp.batch_size,
+                                         self.hp.Nmax)
+        return batch, lengths, self.hp
+
 
 class Generator(nn.Module, GeneratorHParams):
 
@@ -125,9 +160,6 @@ class Generator(nn.Module, GeneratorHParams):
         output = self.decoder(output.view(1, -1))
         return output, hidden
 
-    def init_hidden(self):
-        return torch.zeros(self.n_layers, 1, self.hidden_size)
-
 class Discriminator(nn.Module, DiscriminatorHParams):
     
     def __init__(self, input_size, hidden_size, output_size, n_layers=1):
@@ -149,11 +181,99 @@ class Discriminator(nn.Module, DiscriminatorHParams):
         output = self.decoder(output.view(1, -1))
         return output, hidden
 
-    def init_hidden(self):
-        return torch.zeros(self.n_layers, 1, self.hidden_size)
+class SheepModelV0(object):
+
+    __name__ = "SheepModelV0"
+
+    def __init__(self, shared_hparams, data_pipeline, criterion):
+
+        self.shp = shared_hparams
+        self.dp = data_pipeline
+        self.criterion = criterion
+
+        if use_cuda:
+            self.generator = Generator().cuda()
+            #self.discriminator = Discriminator().cuda()
+        else:
+            self.generator = Generator()
+            
+        self.generator_optimizer = optim.Adam(
+            self.generator.parameters(), self.shp.learning_rate
+        )
+        #self.discriminator_optimizer = optim.Adam(
+        #    self.discriminator.parameters(), self.shp.learning_rate
+        #)
+
+    def train(self, epoch):
+
+        # Init generator for epoch
+        
+        self.generator.zero_grad()
+        self.generator.train()
+
+        # Init discriminator for epoch
+
+        #disc_hidden = self.discriminator.init_hidden()
+        #disc_hidden.zero_grad()
+        #disc_hidden.train()
+
+        # Fetch batches from data pipeline
+        
+        batch, lengths, hp = self.dp.get_clean_batch()
+        self.shp = hp
+
+        # Input and target
+
+        # Process batch
+        
+        gen_output, gen_hidden = self.generator(batch, lengths, self.shp)
+
+        # Prepare optimizers
+
+        self.generator_optimizer.zero_grad()
+
+        # Compute losses
+
+        loss = self.criterion(gen_output, input)
+
+        # Gradient step
+
+        loss.backward()
+
+        # Optimizer step
+
+        self.generator_optimizer.step()
+
+        # Log progress
+
+        if epoch % 1 == 0:
+            logger.info("epoch {}".format(epoch))
+
+            
+
+############################################# train generic model
 
 
-def train_sheepgan():
-    #generator = Generator()
-    #discriminator = Discriminator()
+def train_model(num_epochs: int, model):
+    """ Based on HW2, Rose on the white board, and reference (2) """
 
+    logger.info("STARTED training {}".format(model.__name__))
+
+    for epoch in range(num_epochs):
+        
+        logger.debug("Started epoch: {}".format(epoch))
+        model.train(epoch)
+
+        if epoch % 10 == 0:
+            logger.info("Completed epoch: {}".format(epoch))
+
+    logger.info("FINISHED training {}".format(model.__name__))
+
+
+############################################# run this script
+
+if __name__ == "__main__":
+
+    model = SheepModelV0()
+    train_model(num_epochs=1, model=model)
+    
