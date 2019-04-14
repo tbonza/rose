@@ -101,10 +101,10 @@ class SketchDataPipeline(object):
 
         if use_cuda:
             batch = torch.from_numpy(np.stack(strokes,1)).\
-                type(torch.LongTensor).cuda()
+                type(torch.FloatTensor).cuda()
         else:
             batch = torch.from_numpy(np.stack(strokes,1)).\
-                type(torch.LongTensor)
+                type(torch.FloatTensor)
         return batch, lengths
 
     def get_clean_data(self):
@@ -323,7 +323,7 @@ class Generator(GeneratorHParams):
         self.rho_xy = None
         self.q = None
 
-    def lr_decay(self, optimizer):
+    def ler_decay(self, optimizer):
         """Decay learning rate by a factor of lr_decay
 
         Adaptive learning rate, see reference (1)
@@ -400,8 +400,8 @@ class Generator(GeneratorHParams):
             logger.info("epoch {}, loss {}, LR {}, LKL {}".\
                         format(epoch, loss.data.item(),
                                LR.data.item(), LKL.data.item()))
-            self.encoder_optimizer = self.lr_decay(self.encoder_optimizer)
-            self.decoder_optimizer = self.lr_decay(self.decoder_optimizer)
+            self.encoder_optimizer = self.ler_decay(self.encoder_optimizer)
+            self.decoder_optimizer = self.ler_decay(self.decoder_optimizer)
         if epoch%100==0:
             #self.save(epoch)
             self.conditional_generation(epoch)
@@ -595,6 +595,6 @@ def enable_cloud_log(level='INFO'):
 if __name__ == "__main__":
 
     enable_cloud_log('DEBUG')
-    bah = SheepGAN()
+    bah = SheepGAN(num_epochs=5)
     bah.train()
 
