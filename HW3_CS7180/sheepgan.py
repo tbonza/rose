@@ -12,6 +12,7 @@ as a generator for the GAN.
 References:
   (1) https://github.com/alexis-jacq/Pytorch-Sketch-RNN
   (2) https://github.com/eriklindernoren/PyTorch-GAN
+  (3) https://github.com/j-min/Adversarial_Video_Summary
 """
 import logging
 
@@ -149,10 +150,10 @@ class GeneratorHParams(SharedHParams):
     max_seq_length = 200
 
 class DiscriminatorHParams(SharedHParams):
-    input_size = 1
-    hidden_size = 1
-    output_size = 1
-    n_layers = 1
+    input_size = 512
+    hidden_size = 512
+    output_size = 2
+    num_layers = 2
 
 ############################################################ Generator
 
@@ -551,8 +552,64 @@ class Generator(GeneratorHParams):
 
 ############################################################ Discriminator
 
-class Discriminator(DiscriminatorHParams):
-    pass
+class cLSTM(nn.Module):
+
+    def __init__(self, input_size, hidden_size, num_layers=2):
+        """ Discriminator LSTM """
+        super().__init__()
+
+        self.lstm = nn.LSTM(input_size, hidden_size, num_layers)
+
+    def forward(self, features, init_hidden=None):
+        """
+        Args:
+            features: [seq_len, 1, input_size]
+        Return:
+            last_h: [1, hidden_size]
+        """
+        self.lstm.flatten_parameters()
+
+        # output: seq_len, batch, hidden_size * num_directions
+        # h_n, c_n: num_layers * num_directions, batch_size, hidden_size
+        output, (h_n, c_n) = self.lstm(features, init_hidden)
+
+        # [batch_size, hidden_size]
+        last_h = h_n[-1]
+
+        return last_h
+
+
+class Discriminator(nn.Module, DiscriminatorHParams):
+    """ Reference (3) """
+
+    def __init__(self):
+        """ Discriminator: cLSTM + output projection to probability """
+        super().__init__()
+        self.cLSTM = cLSTM(self.input_size, self.hidden_size,
+                           self.num_layers)
+        self.out = nn.Sequential(
+            nn.Linear(self.hidden_size, 1),
+            nn.Sigmoid()
+        )
+
+    def forward(self, features):
+        """
+        Args:
+            features: [seq_len, 1, hidden_size]
+        Return:
+            h : [1, hidden_size]
+                Last h from top layer of discriminator
+            prob: [1=batch_size, 1]
+                Probability to be original feature from CNN
+        """
+        # [1, hidden_size]
+        h = self.cLSTM(features)
+
+        # [1]
+        prob = self.out(h).squeeze()
+
+        return h, prob
+
 
 
 ############################################################ SheepGAN
