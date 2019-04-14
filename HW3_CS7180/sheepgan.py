@@ -30,28 +30,27 @@ use_cuda = torch.cuda.is_available()
 ############################################# hyperparameters
 
 class SharedHParams(object):
-    def __init__(self):
-        self.max_seq_length = 200
-        self.train_set = 'Sheep_Market/train.npy'
-        self.test_set = 'Sheep_Market/test.npy'
-        self.val_set = 'Sheep_Market/valid.npy'
-        self.learning_rate = 0.005
-        self.batch_size = 100
-        self.Nmax = 0
+
+    max_seq_length = 200
+    train_set = 'Sheep_Market/train.npy'
+    test_set = 'Sheep_Market/test.npy'
+    val_set = 'Sheep_Market/valid.npy'
+    learning_rate = 0.005
+    batch_size = 100
+    Nmax = 0
+    gen_hidden_size = 256
 
 class GeneratorHParams(SharedHParams):
-    def __init__(self):
-        self.input_size = 1
-        self.hidden_size = 200
-        self.output_size = 1
-        self.n_layers = 1
-        
+    input_size = 1
+    hidden_size = 200
+    output_size = 1
+    n_layers = 1
+
 class DiscriminatorHParams(SharedHParams):
-    def __init__(self):
-        self.input_size = 1
-        self.hidden_size = 1
-        self.output_size = 1
-        self.n_layers = 1
+    input_size = 1
+    hidden_size = 1
+    output_size = 1
+    n_layers = 1
 
 ############################################ load and prepare data
 
@@ -121,10 +120,10 @@ class SketchDataPipeline(object):
 
         if use_cuda:
             batch = torch.from_numpy(np.stack(strokes,1)).\
-                type(torch.FloatTensor).cuda()
+                type(torch.LongTensor).cuda()
         else:
             batch = torch.from_numpy(np.stack(strokes,1)).\
-                type(torch.FloatTensor)
+                type(torch.LongTensor)
         return batch, lengths
 
     def get_clean_batch(self):
@@ -143,17 +142,16 @@ class Generator(nn.Module, GeneratorHParams):
 
     def __init__(self):
         super(Generator, self).__init__()
-        
-        self.encoder = nn.Embedding(self.input_size, self.hidden_size)
-        self.lstm = nn.LSTM(
-            self.hidden_size, self.hidden_size, self.n_layers
-        )
-        self.decoder = nn.Linear(self.hidden_size, self.output_size)
+
+        self.encoder = nn.Embedding(self.input_size, self.gen_hidden_size)
+        self.lstm = nn.LSTM(5, self.gen_hidden_size, bidirectional=True)
+        self.decoder = nn.Linear(self.gen_hidden_size, self.output_size)
 
     def forward(self, input, hidden):
-        input = self.encoder(input)
         logger.info("input: {}, hidden: {}".\
-                    format(input.shape, hidden.shape))
+                    format(len(input), len(hidden)))
+
+        input = self.encoder(input)
         output, hidden = self.lstm(input, hidden)
         output = self.decoder(output.view(1, -1))
         return output, hidden
@@ -225,7 +223,7 @@ class SheepModelV0(object):
 
         # Process batch
         
-        gen_output, gen_hidden = self.generator(batch, lengths, self.shp)
+        gen_output, gen_hidden = self.generator(batch, lengths)
 
         # Prepare optimizers
 
