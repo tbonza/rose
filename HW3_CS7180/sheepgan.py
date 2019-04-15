@@ -508,6 +508,9 @@ class Sequence2SequenceVaeUtils(object):
 
 class Generator(Sequence2SequenceVaeUtils):
     """ Generator model, based on Sketch-RNN from Reference (1) """
+
+    __name__ = "Generator"
+    
     def __init__(self, vhp):
 
         # Alias for hyper params b/c of inheritance
@@ -590,8 +593,8 @@ class Generator(Sequence2SequenceVaeUtils):
         self.decoder_optimizer.step()
         # some print and save:
         if epoch%1==0:
-            logger.info("epoch {}, loss {}, LR {}, LKL {}".\
-                        format(epoch, loss.data.item(),
+            logger.info("{} - epoch {}, loss {}, LR {}, LKL {}".\
+                        format(self.__name__, epoch, loss.data.item(),
                                LR.data.item(), LKL.data.item()))
             self.encoder_optimizer = self.ler_decay(self.encoder_optimizer)
             self.decoder_optimizer = self.ler_decay(self.decoder_optimizer)
@@ -618,6 +621,8 @@ class Generator(Sequence2SequenceVaeUtils):
 
 class Discriminator(Sequence2SequenceVaeUtils):
     """ Discriminator model, based on Sketch-RNN from Reference (1) """
+
+    __name__ = "Discriminator"
 
     def __init__(self, vhp):
 
@@ -701,8 +706,8 @@ class Discriminator(Sequence2SequenceVaeUtils):
         self.decoder_optimizer.step()
         # some print and save:
         if epoch%1==0:
-            logger.info("epoch {}, loss {}, LR {}, LKL {}".\
-                        format(epoch, loss.data.item(),
+            logger.info("{} - epoch {}, loss {}, LR {}, LKL {}".\
+                        format(self.__name__, epoch, loss.data.item(),
                                LR.data.item(), LKL.data.item()))
             self.encoder_optimizer = self.ler_decay(self.encoder_optimizer)
             self.decoder_optimizer = self.ler_decay(self.decoder_optimizer)
@@ -742,11 +747,12 @@ class SheepGAN(object):
         logger.info("STARTED training SheepGAN")
 
         generator = Generator(vhp=self.ghp)
+        discriminator = Discriminator(vhp=self.dhp)
 
         for epoch in range(self.num_epochs):
 
             generator.train(epoch)
-            #discriminator.train(epoch)
+            discriminator.train(epoch)
 
             if epoch % 10 == 0:
                 logger.info("Completed epoch: {}".format(epoch))
