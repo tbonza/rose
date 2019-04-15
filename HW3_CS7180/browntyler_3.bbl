@@ -1,0 +1,15 @@
+\begin{thebibliography}{1}
+
+\bibitem{DBLP:journals/corr/HaE17}
+David Ha and Douglas Eck.
+\newblock A neural representation of sketch drawings.
+\newblock {\em CoRR}, abs/1704.03477, 2017.
+
+\bibitem{alexisja77:online}
+Alexis~David Jacq.
+\newblock alexis-jacq/pytorch-sketch-rnn: a pytorch implementation of
+  https://arxiv.org/abs/1704.03477.
+\newblock \url{https://github.com/alexis-jacq/Pytorch-Sketch-RNN}.
+\newblock (Accessed on 04/14/2019).
+
+\end{thebibliography}

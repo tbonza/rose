@@ -1,0 +1,7 @@
+numpy/__init__ /Users/tylerbrown/projects/rose/HW3_CS7180/.pytype/imports/default.pyi
+matplotlib/pyplot /Users/tylerbrown/projects/rose/HW3_CS7180/.pytype/imports/default.pyi
+PIL/__init__ /Users/tylerbrown/projects/rose/HW3_CS7180/.pytype/imports/default.pyi
+torch/__init__ /Users/tylerbrown/projects/rose/HW3_CS7180/.pytype/imports/default.pyi
+torch/nn/__init__ /Users/tylerbrown/projects/rose/HW3_CS7180/.pytype/imports/default.pyi
+torch/optim/__init__ /Users/tylerbrown/projects/rose/HW3_CS7180/.pytype/imports/default.pyi
+torch/nn/functional /Users/tylerbrown/projects/rose/HW3_CS7180/.pytype/imports/default.pyi
