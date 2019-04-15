@@ -34,6 +34,53 @@ logger = logging.getLogger(__name__)
 use_cuda = torch.cuda.is_available()
 
 
+############################################################ Hyperparameters
+
+class SharedHParams(object):
+
+    max_seq_length = 200
+    train_set = 'Sheep_Market/train.npy'
+    test_set = 'Sheep_Market/test.npy'
+    val_set = 'Sheep_Market/valid.npy'
+    batch_size = 100
+    Nmax = 0
+    
+    lr = 0.001
+    lr_decay = 0.9999
+    min_lr = 0.00001
+
+
+class GeneratorHParams(SharedHParams):
+
+    enc_hidden_size = 256
+    dec_hidden_size = 512
+    Nz = 128
+    M = 20
+    dropout = 0.9
+    eta_min = 0.01
+    R = 0.99995
+    KL_min = 0.2
+    wKL = 0.5
+    grad_clip = 1.
+    temperature = 0.4
+    max_seq_length = 200
+
+class DiscriminatorHParams(SharedHParams):
+
+    enc_hidden_size = 256
+    dec_hidden_size = 512
+    Nz = 128
+    M = 20
+    dropout = 0.9
+    eta_min = 0.01
+    R = 0.99995
+    KL_min = 0.2
+    wKL = 0.5
+    grad_clip = 1.
+    temperature = 0.4
+    max_seq_length = 200
+
+
 ############################################ load and prepare data
 
 class SketchDataPipeline(object):
@@ -121,51 +168,11 @@ class SketchDataPipeline(object):
         Nmax = self.max_size(data)
         return data, Nmax
 
-
-############################################################ Hyperparameters
-
-class SharedHParams(object):
-
-    max_seq_length = 200
-    train_set = 'Sheep_Market/train.npy'
-    test_set = 'Sheep_Market/test.npy'
-    val_set = 'Sheep_Market/valid.npy'
-    batch_size = 100
-    Nmax = 0
-    
-    lr = 0.001
-    lr_decay = 0.9999
-    min_lr = 0.00001
-
-
-class GeneratorHParams(SharedHParams):
-
-    enc_hidden_size = 256
-    dec_hidden_size = 512
-    Nz = 128
-    M = 20
-    dropout = 0.9
-    batch_size = 100
-    eta_min = 0.01
-    R = 0.99995
-    KL_min = 0.2
-    wKL = 0.5
-    grad_clip = 1.
-    temperature = 0.4
-    max_seq_length = 200
-
-class DiscriminatorHParams(SharedHParams):
-    input_size = 512
-    hidden_size = 512
-    output_size = 2
-    num_layers = 2
-
-
 #################################################
 # Sequence-to-Sequence Variational AutoEncoder
 #
-# Using variations of this base model as an 
-# encoder and decoder for the GAN
+# Using variations of this base model as a
+# generator and discriminator for the GAN
 #################################################
 
 
@@ -500,7 +507,7 @@ class Sequence2SequenceVaeUtils(object):
 
 
 class Generator(Sequence2SequenceVaeUtils):
-    """ Generator model, Sketch-RNN from Reference (1) """
+    """ Generator model, based on Sketch-RNN from Reference (1) """
     def __init__(self, vhp):
 
         # Alias for hyper params b/c of inheritance
@@ -541,16 +548,16 @@ class Generator(Sequence2SequenceVaeUtils):
     def train(self, epoch):
         self.encoder.train()
         self.decoder.train()
-        batch, lengths = self.sdp.make_batch(ghp.batch_size)
+        batch, lengths = self.sdp.make_batch(self.ghp.batch_size)
         # encode:
-        z, self.mu, self.sigma = self.encoder(batch, ghp.batch_size)
+        z, self.mu, self.sigma = self.encoder(batch, self.ghp.batch_size)
         # create start of sequence:
         if use_cuda:
-            sos = torch.stack([torch.Tensor([0,0,1,0,0])]*ghp.batch_size).\
-                cuda().unsqueeze(0)
+            sos = torch.stack([torch.Tensor([0,0,1,0,0])]*\
+                              self.ghp.batch_size).cuda().unsqueeze(0)
         else:
-            sos = torch.stack([torch.Tensor([0,0,1,0,0])]*ghp.batch_size).\
-                unsqueeze(0)
+            sos = torch.stack([torch.Tensor([0,0,1,0,0])]*\
+                              self.ghp.batch_size).unsqueeze(0)
         # had sos at the begining of the batch:
         batch_init = torch.cat([sos, batch],0)
         # expend z to be ready to concatenate with inputs:
@@ -566,7 +573,7 @@ class Generator(Sequence2SequenceVaeUtils):
         self.encoder_optimizer.zero_grad()
         self.decoder_optimizer.zero_grad()
         # update eta for LKL:
-        self.eta_step = 1-(1-ghp.eta_min)*ghp.R
+        self.eta_step = 1-(1-ghp.eta_min)*self.ghp.R
         # compute losses:
         LKL = self.kullback_leibler_loss()
         LR = self.reconstruction_loss(mask,dx,dy,p,epoch)
@@ -608,8 +615,113 @@ class Generator(Sequence2SequenceVaeUtils):
 
 ############################################################ Discriminator
 
-dhp = DiscriminatorHParams()
 
+class Discriminator(Sequence2SequenceVaeUtils):
+    """ Discriminator model, based on Sketch-RNN from Reference (1) """
+
+    def __init__(self, vhp):
+
+        # Alias for hyper params b/c of inheritance
+
+        self.vhp = vhp
+        self.dhp = self.vhp
+
+        # Setting up generator
+        
+        if use_cuda:
+            self.encoder = EncoderRNN(self.dhp).cuda()
+            self.decoder = DecoderRNN(self.dhp).cuda()
+        else:
+            self.encoder = EncoderRNN(self.dhp)
+            self.decoder = DecoderRNN(self.dhp)
+        self.encoder_optimizer = optim.Adam(self.encoder.parameters(),
+                                            self.dhp.lr)
+        self.decoder_optimizer = optim.Adam(self.decoder.parameters(),
+                                            self.dhp.lr)
+        self.eta_step = dhp.eta_min
+        self.sdp = SketchDataPipeline(self.dhp, self.dhp.train_set)
+
+        ## Local hyperparams
+
+        # Encoder output
+        self.mu = None
+        self.sigma = None
+
+        # Decoder output
+        self.pi = None
+        self.mu_x = None
+        self.mu_y = None
+        self.sigma_x = None
+        self.sigma_y = None
+        self.rho_xy = None
+        self.q = None
+
+    def train(self, epoch):
+        self.encoder.train()
+        self.decoder.train()
+        batch, lengths = self.sdp.make_batch(self.dhp.batch_size)
+        # encode:
+        z, self.mu, self.sigma = self.encoder(batch, self.dhp.batch_size)
+        # create start of sequence:
+        if use_cuda:
+            sos = torch.stack([torch.Tensor([0,0,1,0,0])]*\
+                              self.dhp.batch_size).cuda().unsqueeze(0)
+        else:
+            sos = torch.stack([torch.Tensor([0,0,1,0,0])]*\
+                              self.dhp.batch_size).unsqueeze(0)
+        # had sos at the begining of the batch:
+        batch_init = torch.cat([sos, batch],0)
+        # expend z to be ready to concatenate with inputs:
+        z_stack = torch.stack([z]*(self.sdp.Nmax+1))
+        # inputs is concatenation of z and batch_inputs
+        inputs = torch.cat([batch_init, z_stack],2)
+        # decode:
+        self.pi, self.mu_x, self.mu_y, self.sigma_x, self.sigma_y, \
+            self.rho_xy, self.q, _, _ = self.decoder(inputs, z)
+        # prepare targets:
+        mask,dx,dy,p = self.make_target(batch, lengths)
+        # prepare optimizers:
+        self.encoder_optimizer.zero_grad()
+        self.decoder_optimizer.zero_grad()
+        # update eta for LKL:
+        self.eta_step = 1-(1-self.dhp.eta_min)*self.dhp.R
+        # compute losses:
+        LKL = self.kullback_leibler_loss()
+        LR = self.reconstruction_loss(mask,dx,dy,p,epoch)
+        loss = LR + LKL
+        # gradient step
+        loss.backward()
+        # gradient cliping
+        nn.utils.clip_grad_norm(self.encoder.parameters(),
+                                self.dhp.grad_clip)
+        nn.utils.clip_grad_norm(self.decoder.parameters(),
+                                self.dhp.grad_clip)
+        # optim step
+        self.encoder_optimizer.step()
+        self.decoder_optimizer.step()
+        # some print and save:
+        if epoch%1==0:
+            logger.info("epoch {}, loss {}, LR {}, LKL {}".\
+                        format(epoch, loss.data.item(),
+                               LR.data.item(), LKL.data.item()))
+            self.encoder_optimizer = self.ler_decay(self.encoder_optimizer)
+            self.decoder_optimizer = self.ler_decay(self.decoder_optimizer)
+        if epoch%100==0:
+            #self.save(epoch)
+            self.conditional_generation(epoch, self.encoder, self.decoder)
+
+    def save(self, epoch):
+        sel = np.random.rand()
+        torch.save(self.encoder.state_dict(), \
+                   'encoderRNN_sel_%3f_epoch_%d.pth' % (sel,epoch))
+        torch.save(self.decoder.state_dict(), \
+                   'decoderRNN_sel_%3f_epoch_%d.pth' % (sel,epoch))
+
+    def load(self, encoder_name, decoder_name):
+        saved_encoder = torch.load(encoder_name)
+        saved_decoder = torch.load(decoder_name)
+        self.encoder.load_state_dict(saved_encoder)
+        self.decoder.load_state_dict(saved_decoder)
 
 
 
