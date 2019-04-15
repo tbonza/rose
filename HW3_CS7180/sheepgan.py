@@ -166,7 +166,8 @@ class SketchDataPipeline(object):
         
         batch_idx = np.random.choice(len(data),batch_size)
         batch_sequences = [data[idx] for idx in batch_idx]
-        strokes = []
+        rand_strokes = []
+        valid_strokes = []
         lengths = []
         indice = 0
 
@@ -184,15 +185,15 @@ class SketchDataPipeline(object):
         # Replace all sequences with random numbers
 
         max_val = 450
-        min_val = 450
+        min_val = -450
         mean_val = 0.29396755097850724
         std_val = 5.5914771938034615
 
         rand_seq = np.zeros(new_seq.shape)
         for i in range(len(seq[:,0])):
             
-            x_coord = np.random.randint(low=min_val, high=max_val)
-            y_coord = np.random.randint(low=min_val, high=max_val)
+            x_coord = np.random.randint(low=0, high=max_val)
+            y_coord = np.random.randint(low=0, high=max_val)
             pen = np.random.randint(0,1)
 
             if new_seq[i, 0] < 0:
@@ -205,9 +206,31 @@ class SketchDataPipeline(object):
             rand_seq[i, 2] = pen
 
         lengths.append(len(seq[:,0]))
-        strokes.append(rand_seq)
+        rand_strokes.append(rand_seq)
+        valid_strokes.append(new_seq)
 
-        return (strokes, lengths, [new_seq])
+        if use_cuda:
+            rand_batch = torch.from_numpy(np.stack(rand_strokes,1)).\
+                type(torch.FloatTensor).cuda()
+            valid_batch = torch.from_numpy(np.stack(valid_strokes,1)).\
+                type(torch.FloatTensor).cuda()
+        else:
+            rand_batch = torch.from_numpy(np.stack(rand_strokes,1)).\
+                type(torch.FloatTensor)
+            valid_batch = torch.from_numpy(np.stack(valid_strokes,1)).\
+                type(torch.FloatTensor)
+
+        return rand_batch, valid_batch, lengths
+
+    def gencast_tensor(self, strokes: list, lengths):
+        if use_cuda:
+            batch = torch.from_numpy(np.stack(strokes,1)).\
+                type(torch.FloatTensor).cuda()
+        else:
+            batch = torch.from_numpy(np.stack(strokes,1)).\
+                type(torch.FloatTensor)
+
+        return batch, lengths
 
     def get_clean_data(self):
         """ Execute data pipeline on a data location """
@@ -861,9 +884,9 @@ class SheepGAN(object):
 
             # Sample noise as generator input
             
-            rand_strokes, lengths, valid_strokes = \
+            rand_batch, valid_batch, lengths = \
                 self.sdp.make_gan_batch(self.ghp.batch_size)
-            gan_batch = (rand_strokes, lengths)
+            gan_batch = (rand_batch, lengths)
 
             # Generate batch of images
             
@@ -871,7 +894,8 @@ class SheepGAN(object):
 
             # Create new strokes based on generated strokes
 
-            disc_strokes = discriminator.discstrokes(gen_strokes)
+            gen_batch = self.sdp.gencast_tensor(gen_strokes, lengths)
+            disc_strokes = discriminator.discstrokes(gen_batch)
 
             # Check discriminator image against valid
             # images from within batch
