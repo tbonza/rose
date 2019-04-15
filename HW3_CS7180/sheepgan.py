@@ -223,11 +223,32 @@ class SketchDataPipeline(object):
         return rand_batch, valid_batch, lengths
 
     def gencast_tensor(self, strokes: list, lengths):
+
+        Nmax = self.Nmax
+        
+        # Reprocess strokes
+        
+        clean_strokes = []
+
+        print("\n\n")
+        print(strokes)
+        print("\n\n")
+        
+        seq = np.array(strokes)
+        len_seq = len(seq[:,0])
+        new_seq = np.zeros((Nmax,5))
+        new_seq[:len_seq,:2] = seq[:,:2]
+        new_seq[:len_seq-1,2] = 1-seq[:-1,2]
+        new_seq[:len_seq,3] = seq[:,2]
+        new_seq[(len_seq-1):,4] = 1
+        new_seq[len_seq-1,2:4] = 0
+        clean_strokes.append(new_seq)
+
         if use_cuda:
-            batch = torch.from_numpy(np.stack(strokes,1)).\
+            batch = torch.from_numpy(np.stack(clean_strokes,1)).\
                 type(torch.FloatTensor).cuda()
         else:
-            batch = torch.from_numpy(np.stack(strokes,1)).\
+            batch = torch.from_numpy(np.stack(clean_strokes,1)).\
                 type(torch.FloatTensor)
 
         return batch, lengths
@@ -475,43 +496,52 @@ class Sequence2SequenceVaeUtils(object):
     def gan_conditional_generation(self, encoder, decoder, gan_batch):
         batch, lengths = gan_batch
 
-        # should remove dropouts:
-        encoder.train(False)
-        decoder.train(False)
-        # encode:
-        z, _, _ = encoder(batch, 1)
-        if use_cuda:
-            sos = torch.Tensor([0,0,1,0,0]).view(1,1,-1).cuda()
-        else:
-            sos = torch.Tensor([0,0,1,0,0]).view(1,1,-1)
-        s = sos
-        seq_x = []
-        seq_y = []
-        seq_z = []
-        hidden_cell = None
-        for i in range(self.sdp.Nmax):
-            input = torch.cat([s,z.unsqueeze(0)],2)
-            # decode:
-            self.pi, self.mu_x, self.mu_y, self.sigma_x, self.sigma_y, \
-                self.rho_xy, self.q, hidden, cell = \
-                    decoder(input, z, hidden_cell)
-            hidden_cell = (hidden, cell)
-            # sample from parameters:
-            s, dx, dy, pen_down, eos = self.sample_next_state()
-            #------
-            seq_x.append(dx)
-            seq_y.append(dy)
-            seq_z.append(pen_down)
-            if eos:
-                print(i)
-                break
-        # visualize result:
-        x_sample = np.cumsum(seq_x, 0)
-        y_sample = np.cumsum(seq_y, 0)
-        z_sample = np.array(seq_z)
-        sequence = np.stack([x_sample,y_sample,z_sample]).T
-        strokes = np.split(sequence, np.where(sequence[:,2]>0)[0]+1)
-        return strokes # TODO
+        new_batch = []
+        for idx, seq_len in enumerate(lengths):
+
+            print("batch dim: {}".format(batch[idx].size()))
+            print(seq_len)
+            
+            # should remove dropouts:
+            encoder.train(False)
+            decoder.train(False)
+            # encode:
+            z, _, _ = encoder(batch, 1)
+            if use_cuda:
+                sos = torch.Tensor([0,0,1,0,0]).view(1,1,-1).cuda()
+            else:
+                sos = torch.Tensor([0,0,1,0,0]).view(1,1,-1)
+            s = sos
+            seq_x = []
+            seq_y = []
+            seq_z = []
+            hidden_cell = None
+            for i in range(seq_len):
+                input = torch.cat([s,z.unsqueeze(0)],2)
+                # decode:
+                self.pi, self.mu_x, self.mu_y, self.sigma_x, self.sigma_y, \
+                    self.rho_xy, self.q, hidden, cell = \
+                        decoder(input, z, hidden_cell)
+                hidden_cell = (hidden, cell)
+                # sample from parameters:
+                s, dx, dy, pen_down, eos = self.sample_next_state()
+                #------
+                seq_x.append(dx)
+                seq_y.append(dy)
+                seq_z.append(pen_down)
+                if eos:
+                    print(i)
+                    break
+                # visualize result:
+                x_sample = np.cumsum(seq_x, 0)
+                y_sample = np.cumsum(seq_y, 0)
+                z_sample = np.array(seq_z)
+                sequence = np.stack([x_sample,y_sample,z_sample]).T
+                #strokes = np.split(sequence, np.where(sequence[:,2]>0)[0]+1)
+                
+                new_batch.append(sequence)
+
+        return new_batch
 
     def conditional_generation(self, epoch, encoder, decoder):
         batch,lengths = self.sdp.make_batch(1)
@@ -893,7 +923,7 @@ class SheepGAN(object):
             gen_strokes = generator.genstrokes(gan_batch)
 
             # Create new strokes based on generated strokes
-
+            
             gen_batch = self.sdp.gencast_tensor(gen_strokes, lengths)
             disc_strokes = discriminator.discstrokes(gen_batch)
 
@@ -901,7 +931,6 @@ class SheepGAN(object):
             # images from within batch
 
             # set up a joint optimizer to minimize here
-            # no need to concatenate the model for now
 
             if epoch % 10 == 0:
                 logger.info("Completed epoch: {}".format(epoch))
