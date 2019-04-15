@@ -160,6 +160,55 @@ class SketchDataPipeline(object):
                 type(torch.FloatTensor)
         return batch, lengths
 
+    def make_gan_batch(self, batch_size):
+        data = self.data
+        Nmax = self.Nmax
+        
+        batch_idx = np.random.choice(len(data),batch_size)
+        batch_sequences = [data[idx] for idx in batch_idx]
+        strokes = []
+        lengths = []
+        indice = 0
+
+        # Use only one randomly selected batch dims
+        seq = batch_sequences[0]
+
+        len_seq = len(seq[:,0])
+        new_seq = np.zeros((Nmax,5))
+        new_seq[:len_seq,:2] = seq[:,:2]
+        new_seq[:len_seq-1,2] = 1-seq[:-1,2]
+        new_seq[:len_seq,3] = seq[:,2]
+        new_seq[(len_seq-1):,4] = 1
+        new_seq[len_seq-1,2:4] = 0
+
+        # Replace all sequences with random numbers
+
+        max_val = 450
+        min_val = 450
+        mean_val = 0.29396755097850724
+        std_val = 5.5914771938034615
+
+        rand_seq = np.zeros(new_seq.shape)
+        for i in range(len(seq[:,0])):
+            
+            x_coord = np.random.randint(low=min_val, high=max_val)
+            y_coord = np.random.randint(low=min_val, high=max_val)
+            pen = np.random.randint(0,1)
+
+            if new_seq[i, 0] < 0:
+                x_coord = x_coord * -1
+            if new_seq[i, 1] < 0:
+                y_coord = y_coord * -1
+
+            rand_seq[i, 0] = x_coord
+            rand_seq[i, 1] = y_coord
+            rand_seq[i, 2] = pen
+
+        lengths.append(len(seq[:,0]))
+        strokes.append(rand_seq)
+
+        return (strokes, lengths, [new_seq])
+
     def get_clean_data(self):
         """ Execute data pipeline on a data location """
         data = np.load(self.data_location, encoding='latin1')
@@ -400,6 +449,47 @@ class Sequence2SequenceVaeUtils(object):
             KL_min = torch.Tensor([ghp.KL_min]).detach()
         return self.vhp.wKL*self.eta_step * torch.max(LKL,KL_min)
 
+    def gan_conditional_generation(self, encoder, decoder, gan_batch):
+        batch, lengths = gan_batch
+
+        # should remove dropouts:
+        encoder.train(False)
+        decoder.train(False)
+        # encode:
+        z, _, _ = encoder(batch, 1)
+        if use_cuda:
+            sos = torch.Tensor([0,0,1,0,0]).view(1,1,-1).cuda()
+        else:
+            sos = torch.Tensor([0,0,1,0,0]).view(1,1,-1)
+        s = sos
+        seq_x = []
+        seq_y = []
+        seq_z = []
+        hidden_cell = None
+        for i in range(self.sdp.Nmax):
+            input = torch.cat([s,z.unsqueeze(0)],2)
+            # decode:
+            self.pi, self.mu_x, self.mu_y, self.sigma_x, self.sigma_y, \
+                self.rho_xy, self.q, hidden, cell = \
+                    decoder(input, z, hidden_cell)
+            hidden_cell = (hidden, cell)
+            # sample from parameters:
+            s, dx, dy, pen_down, eos = self.sample_next_state()
+            #------
+            seq_x.append(dx)
+            seq_y.append(dy)
+            seq_z.append(pen_down)
+            if eos:
+                print(i)
+                break
+        # visualize result:
+        x_sample = np.cumsum(seq_x, 0)
+        y_sample = np.cumsum(seq_y, 0)
+        z_sample = np.array(seq_z)
+        sequence = np.stack([x_sample,y_sample,z_sample]).T
+        strokes = np.split(sequence, np.where(sequence[:,2]>0)[0]+1)
+        return strokes # TODO
+
     def conditional_generation(self, epoch, encoder, decoder):
         batch,lengths = self.sdp.make_batch(1)
         # should remove dropouts:
@@ -602,6 +692,13 @@ class Generator(Sequence2SequenceVaeUtils):
             #self.save(epoch)
             self.conditional_generation(epoch, self.encoder, self.decoder)
 
+    def genstrokes(self, gan_batch):
+        strokes = self.gan_conditional_generation(self.encoder,
+                                                  self.decoder,
+                                                  gan_batch)
+        return strokes
+
+
     def save(self, epoch):
         sel = np.random.rand()
         torch.save(self.encoder.state_dict(), \
@@ -715,6 +812,13 @@ class Discriminator(Sequence2SequenceVaeUtils):
             #self.save(epoch)
             self.conditional_generation(epoch, self.encoder, self.decoder)
 
+    def discstrokes(self, gen_batch):
+        """ Conditional generation based on generator strokes """
+        strokes = self.gan_conditional_generation(self.encoder,
+                                                  self.decoder,
+                                                  gen_batch)
+        return strokes
+
     def save(self, epoch):
         sel = np.random.rand()
         torch.save(self.encoder.state_dict(), \
@@ -738,10 +842,11 @@ class SheepGAN(object):
     to play ball.
     """
 
-    def __init__(self, num_epochs: int, ghp, dhp):
+    def __init__(self, num_epochs: int, ghp, dhp, sdp):
         self.num_epochs = num_epochs
         self.ghp = ghp
         self.dhp = dhp
+        self.sdp = sdp
 
     def train(self):
         logger.info("STARTED training SheepGAN")
@@ -753,6 +858,26 @@ class SheepGAN(object):
 
             generator.train(epoch)
             discriminator.train(epoch)
+
+            # Sample noise as generator input
+            
+            rand_strokes, lengths, valid_strokes = \
+                self.sdp.make_gan_batch(self.ghp.batch_size)
+            gan_batch = (rand_strokes, lengths)
+
+            # Generate batch of images
+            
+            gen_strokes = generator.genstrokes(gan_batch)
+
+            # Create new strokes based on generated strokes
+
+            disc_strokes = discriminator.discstrokes(gen_strokes)
+
+            # Check discriminator image against valid
+            # images from within batch
+
+            # set up a joint optimizer to minimize here
+            # no need to concatenate the model for now
 
             if epoch % 10 == 0:
                 logger.info("Completed epoch: {}".format(epoch))
@@ -779,6 +904,7 @@ if __name__ == "__main__":
     enable_cloud_log('DEBUG')
     ghp = GeneratorHParams()
     dhp = DiscriminatorHParams()
-    bah = SheepGAN(num_epochs=5, ghp=ghp, dhp=dhp)
+    sdp = SketchDataPipeline(ghp, ghp.train_set)
+    bah = SheepGAN(num_epochs=5, ghp=ghp, dhp=dhp, sdp=sdp)
     bah.train()
 
